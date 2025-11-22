@@ -2,10 +2,12 @@
 
 namespace App;
 
+use App\Detectors\HashDetector;
+use App\Enums\DetectionType;
 use App\Interfaces\DetectorInterface;
 use Illuminate\Http\UploadedFile;
 
-abstract class AbstractDetector implements DetectorInterface {
+class DetectorFactory {
     private UploadedFile $file;
     private ?UploadedFile $originalFile;
 
@@ -20,13 +22,15 @@ abstract class AbstractDetector implements DetectorInterface {
         }
     }
 
-    public function getFile(): UploadedFile
+    public function createDetector(DetectionType|string $type): ?DetectorInterface
     {
-        return $this->file;
-    }
+        if (!$type instanceof DetectionType) {
+            $type = DetectionType::tryFrom($type);
+        }
 
-    public function getOriginalFile(): ?UploadedFile
-    {
-        return $this->originalFile;
+        return match ($type) {
+            DetectionType::HASHING => new HashDetector($this->file, $this->originalFile),
+            'default' => null
+        };
     }
 }

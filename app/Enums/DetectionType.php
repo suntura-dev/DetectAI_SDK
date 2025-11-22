@@ -2,4 +2,6 @@
 
 namespace App\Enums;
 
-enum DetectionType: string {}
+enum DetectionType: string {
+    case HASHING = 'Hashing';
+}
