@@ -26,6 +26,31 @@ class DetectionResultDTO {
         $this->metadata = $metadata;
     }
 
+    public function getScore(): float
+    {
+        return $this->score;
+    }
+
+    public function getDetectionType(): DetectionType
+    {
+        return $this->detectionType;
+    }
+
+    public function getReason(): string
+    {
+        return $this->reason;
+    }
+
+    public function getComparisonImages(): array
+    {
+        return $this->comparisonImages;
+    }
+
+    public function getMetadata(): array
+    {
+        return $this->metadata;
+    }
+
     public function toArray(): array
     {
         return [
