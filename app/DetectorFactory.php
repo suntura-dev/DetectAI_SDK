@@ -4,6 +4,7 @@ namespace App;
 
 use App\Detectors\ExifDetector;
 use App\Detectors\HashDetector;
+use App\Detectors\OpenAIDetector;
 use App\Enums\DetectionType;
 use App\Interfaces\DetectorInterface;
 use Illuminate\Http\UploadedFile;
@@ -32,6 +33,7 @@ class DetectorFactory {
         return match ($type) {
             DetectionType::HASHING => new HashDetector($this->file, $this->originalFile),
             DetectionType::EXIF_ANALYSIS => new ExifDetector($this->file),
+            DetectionType::OPENAI_API => new OpenAIDetector($this->file),
             'default' => null
         };
     }
