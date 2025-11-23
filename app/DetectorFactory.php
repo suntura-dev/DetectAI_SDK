@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Detectors\ExifDetector;
 use App\Detectors\HashDetector;
 use App\Enums\DetectionType;
 use App\Interfaces\DetectorInterface;
@@ -30,6 +31,7 @@ class DetectorFactory {
 
         return match ($type) {
             DetectionType::HASHING => new HashDetector($this->file, $this->originalFile),
+            DetectionType::EXIF_ANALYSIS => new ExifDetector($this->file),
             'default' => null
         };
     }
