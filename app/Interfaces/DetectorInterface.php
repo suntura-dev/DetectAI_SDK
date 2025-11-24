@@ -3,10 +3,10 @@
 namespace App\Interfaces;
 
 use App\DataTransferObjects\DetectionResultDTO;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Http\File;
 
 interface DetectorInterface {
-    public function getFile(): UploadedFile;
-    public function getOriginalFile(): ?UploadedFile;
+    public function getFile(): File;
+    public function getOriginalFile(): ?File;
     public function detect(): DetectionResultDTO;
 }

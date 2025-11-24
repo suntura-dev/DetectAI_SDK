@@ -2,30 +2,27 @@
 
 namespace App;
 
+use App\Facades\File as FileFacade;
 use App\Interfaces\DetectorInterface;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Http\File;
 
 abstract class AbstractDetector implements DetectorInterface {
-    private UploadedFile $file;
-    private ?UploadedFile $originalFile;
+    private File $file;
+    private ?File $originalFile;
 
-    public function __construct(UploadedFile|string $file, UploadedFile|string|null $originalFile = null)
+    public function __construct(File|string $file, File|string|null $originalFile = null)
     {
-        $this->file = $file instanceof UploadedFile ? $file : new UploadedFile($file, now());
-
-        if ($originalFile) {
-            $this->originalFile = $originalFile instanceof UploadedFile
-                ? $originalFile
-                : new UploadedFile($originalFile, now());
-        }
+        $this->file = FileFacade::create($file);
+        $this->originalFile = FileFacade::create($originalFile);
     }
 
-    public function getFile(): UploadedFile
+
+    public function getFile(): File
     {
         return $this->file;
     }
 
-    public function getOriginalFile(): ?UploadedFile
+    public function getOriginalFile(): ?File
     {
         return $this->originalFile;
     }
