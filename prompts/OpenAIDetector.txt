@@ -1,0 +1,50 @@
+Task: Determine whether the suspect image is an **authentic match** of the original or whether it has been **altered/ manipulated** (including but not limited to edits via photo tools, splicing, inpainting, GenAI/image synthesis, retouching, color grading, selective removal/addition). You must produce:
+
+1. A single final `score` between 0.0 and 1.0 (inclusive), representing the model's best numeric estimate of the **probability that the suspect image is intentionally altered relative to the original** (0.0 = definitely unaltered; 1.0 = definitely altered). **Round to one decimal (nearest 0.1)**; the schema enforces `multipleOf: 0.1`.
+
+2. A `reason` string that includes, in order:
+   a. A one-sentence concise conclusion.  
+   b. A numbered, precise evidence breakdown that lists each **subfactor** examined (see list below). For each subfactor include:
+      - `name` (one short phrase),
+      - `sub_score` (0.0–1.0 numeric), and
+      - a one-line justification (why that sub-score was assigned).  
+   c. If any decode/URI error or image missing, set `detection_type` to `"uncertain"` and `score` to `0.0` and explain the decoding problem.
+
+Formatting rules:
+- Output exactly one JSON object named `detection_result` (no surrounding text).
+- The object must include `score`, `detection_type`, and `reason` (required). You may include optional machine-parsable `breakdown` (array) and `meta` (object) fields — but do not output additional top-level fields beyond these unless they are part of the schema.
+- All numeric sub-scores must be between 0.0 and 1.0. Round only the final `score` to one decimal; in `breakdown` display sub_scores to at least two decimal places or as precise fractions.
+
+Investigate and report the following subfactors (at minimum — the model may add others as needed). For each, produce a sub-score (0.0–1.0) and a one-line justification:
+- Visual correspondence (pixel-level match, structural similarity).
+- Object geometry consistency (perspective, relative size, shadows).
+- Lighting & shadow physics (shadow direction, contact shadows, intensity).
+- Texture / noise / sensor pattern differences (noise floor, PRNU-like differences, resampling fingerprints).
+- Compression & artifacts (blocking, double-compression, resampling traces, upscaling).
+- Local editing traces (seams, cloning/clone-stamp artifacts, inconsistent edges).
+- Splicing / compositing cues (boundary mismatch, inconsistent blur across boundaries).
+- GenAI indicators (inpainting halos, repeating micro-patterns, unnatural textures, facial landmark inconsistencies).
+- Semantic context consistency (scene objects, weather, food arrangement, logos, timestamps).
+- Metadata clues (EXIF/creation timestamps, camera model mismatch) — only use if provided; otherwise note absence.
+- Image provenance cues (e.g., abrupt histogram shifts, color grading, watermark removal).
+
+Scoring & weighting guidance (must be followed in aggregation):
+- Use a logical weighting that prioritizes direct pixel-level and local editing signals (visual correspondence, local edits, texture/noise) more heavily than semantic/contextual cues. A recommended default weighting (which the model must report and may override only with justification):
+  - visual: 0.45
+  - local_edit_traces: 0.20
+  - texture_noise: 0.15
+  - compression_artifacts: 0.10
+  - lighting_shadows: 0.05
+  - semantic_context: 0.03
+  - metadata: 0.02
+- Compute weighted sum of sub-scores, show the formula and result, then round to one decimal for `score`.
+
+Safety handling:
+- If the images appear to contain illegal/prohibited content. Provide a terse safety justification in `reason` and **do not** provide further explicit descriptive details.
+- If face-recognition or identification would be required to answer, prefer to flag uncertainty rather than attempt identification.
+
+If the suspect image shows **intentional removal or addition** of content that could materially influence a refund decision (e.g., food removed, item added, sticker/logo removed), call that out explicitly in the `reason` and estimate sub-scores accordingly.
+
+If all is OK, return a low `score` (near 0.0).
+
+Now analyze the provided images (`image_original` and `image_suspect`) and return exactly one JSON object named `detection_result` conforming to the above.
