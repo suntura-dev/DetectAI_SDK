@@ -78,7 +78,7 @@
         "laravel": {
             "dont-discover": [],
             "providers": [
-                "DetectAI\\DetectAIServiceProvider"
+                "DetectAI\\Providers\\DetectAIServiceProvider"
             ]
         }
     },
