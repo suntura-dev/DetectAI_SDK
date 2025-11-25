@@ -6,6 +6,8 @@ use DetectAI\AbstractDetector;
 use DetectAI\DataTransferObjects\DetectionResultDTO;
 use DetectAI\Enums\DetectionType;
 use Exception;
+use Jenssegers\ImageHash\ImageHash;
+use Jenssegers\ImageHash\Implementations\DifferenceHash;
 
 class HashDetector extends AbstractDetector
 {
@@ -22,13 +24,34 @@ class HashDetector extends AbstractDetector
             throw new Exception('Unable to generate hash for Analyzed File');
         }
 
-        return (new DetectionResultDTO(
-            $originalFileHash === $fileHash ? 0.0 : 0.5,
+        if ($originalFileHash !== $fileHash) {
+            return $this->calculatePerceptualHash();
+        }
+
+        return new DetectionResultDTO(
+            0.0,
             DetectionType::HASHING,
-            $originalFileHash === $fileHash
-                ? 'File Hashes are identical'
-                : 'File Hashes are not identical, file may or may not have been tempered with',
+            'Images are identical',
             [ $this->getOriginalFile() ]
-        ));
+        );
+    }
+
+    private function calculatePerceptualHash(): DetectionResultDTO
+    {
+        $hasher = new ImageHash(new DifferenceHash());
+
+        $hash1 = $hasher->hash($this->getFile()->getRealPath());
+        $hash2 = $hasher->hash($this->getOriginalFile()->getRealPath());
+
+        $distance = $hash1->distance($hash2);
+
+        $score = $distance >= 10 ? 1.0 : $distance / 10;
+        
+        return new DetectionResultDTO(
+            $score,
+            DetectionType::HASHING,
+            $score <= 0.5 ? 'Images are similar' : 'Image might have been tempered with' ,
+            [ $this->getOriginalFile() ],
+        );
     }
 }
