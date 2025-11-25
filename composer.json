@@ -14,6 +14,7 @@
     "require": {
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.10",
+        "jenssegers/imagehash": "*",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "openai-php/client": "^0.18.0"
