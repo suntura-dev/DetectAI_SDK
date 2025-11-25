@@ -7,19 +7,22 @@ use Exception;
 use DetectAI\AbstractDetector;
 use DetectAI\DataTransferObjects\DetectionResultDTO;
 use DetectAI\Enums\DetectionType;
+use Illuminate\Http\File;
 
 class OpenAIDetector extends AbstractDetector {    
     public function detect(): DetectionResultDTO
     {
-        $file = $this->getFile();
+        $suspectFileMimetype = $this->getFile()->getMimeType();
 
-        $mimeType = $file->getMimeType();
-
-        if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'])) {
-            throw new Exception('Invalid File Format provided');
+        if (!in_array($suspectFileMimetype, ['image/jpeg', 'image/png', 'image/webp'])) {
+            throw new Exception('Invalid Suspect File Format provided');
         }
 
-        $base64 = base64_encode(file_get_contents($file->getRealPath()));
+        $originalFileMimetype = $this->getOriginalFile()->getMimeType();
+
+        if (!in_array($originalFileMimetype, ['image/jpeg', 'image/png', 'image/webp'])) {
+            throw new Exception('Invalid Original File Format provided');
+        }
 
         $response = OpenAI::responses()->create([
             'model' => 'gpt-4.1',
@@ -29,11 +32,17 @@ class OpenAIDetector extends AbstractDetector {
                     'content' => [
                         [
                             'type' => 'input_text',
-                            'text' => "what's in this image?"
+                            'text' => "{$this->getPrompt()}"
                         ],
                         [
                             'type' => 'input_image',
-                            'image_url' => "data:{$mimeType};base64,{$base64}"
+                            'image_url' => "data:{$originalFileMimetype};base64,{$this->getFileContents($this->getOriginalFile())}",
+                            'name' => 'image_original', 
+                        ],
+                        [
+                            'type' => 'input_image',
+                            'image_url' => "data:{$suspectFileMimetype};base64,{$this->getFileContents($this->getFile())}",
+                            'name' => 'image_suspect', 
                         ]
                     ]
                 ]
@@ -49,8 +58,20 @@ class OpenAIDetector extends AbstractDetector {
         return (new DetectionResultDTO(
             $responseObj->score,
             DetectionType::OPENAI_API,
-            $responseObj->score === 0.0 ? 'Image has not been tempered with' : 'Image may have been tempered with',
+            $responseObj->reason,
         ));
+    }
+
+    private function getPrompt(): string
+    {
+        $basePath = base_path('prompts/OpenAIDetector.txt');
+        $prompt = file_get_contents($basePath);
+
+        if (!$prompt || empty($prompt)) {
+            throw new Exception(sprintf("Could not extract prompt from: %s", $basePath));
+        }
+
+        return $prompt;
     }
 
     private function getResponseSchema(): array
@@ -75,5 +96,10 @@ class OpenAIDetector extends AbstractDetector {
                 'required' => ['score', 'detection_type', 'reason']
             ]
         ];
+    }
+
+    private function getFileContents(File $file): string
+    {
+        return base64_encode(file_get_contents($file->getRealPath()));
     }
 }
